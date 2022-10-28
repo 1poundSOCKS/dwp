@@ -49,12 +49,12 @@ export default class TicketService {
     const totalTicketCost = ( adultTicketCount * 20 ) + ( childTicketCount * 10 )
     const totalSeatCount = adultTicketCount + childTicketCount
 
-    // reserve the seats
-    const seatReservationService = new SeatReservationService
-    seatReservationService.reserveSeat(accountId, totalSeatCount)
-
     // make the payment
     const ticketPaymentService = new TicketPaymentService
     ticketPaymentService.makePayment(accountId, totalTicketCost)
+
+    // reserve the seats
+    const seatReservationService = new SeatReservationService
+    seatReservationService.reserveSeat(accountId, totalSeatCount)
   }
 }
