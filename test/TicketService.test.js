@@ -2,7 +2,6 @@ import TicketTypeRequest from '../src/pairtest/lib/TicketTypeRequest.js'
 import TicketService from '../src/pairtest/TicketService.js'
 import TicketPaymentService from '../src/thirdparty/paymentgateway/TicketPaymentService.js'
 import SeatReservationService from '../src/thirdparty/seatbooking/SeatReservationService.js'
-import InvalidPurchaseException from '../src/pairtest/lib/InvalidPurchaseException.js'
 
 jest.mock('../src/thirdparty/paymentgateway/TicketPaymentService.js')
 jest.mock('../src/thirdparty/seatbooking/SeatReservationService.js')
@@ -11,6 +10,10 @@ beforeEach(() => {
   TicketPaymentService.mockClear()
   SeatReservationService.mockClear()
 })
+
+/*
+  tests of valid purchases
+*/
 
 test("purchase a single adult ticket", () => {
 
@@ -92,6 +95,30 @@ test("purchase 1 of each type (adult, child & infant)", () => {
   expect(mockReserveSeat.mock.calls[0][1]).toEqual(2)
 })
 
+test("purchase 2 child tickets and 1 adult ticket", () => { // I assume this is okay, wan't totally clear but makes sense
+
+  const accountId = 1
+  const purchaseRequest1 = new TicketTypeRequest("ADULT", 1)
+  const purchaseRequest2 = new TicketTypeRequest("CHILD", 2)
+
+  const ticketService = new TicketService()
+  ticketService.purchaseTickets(accountId, purchaseRequest1, purchaseRequest2)
+  
+  const mockTicketPaymentService = TicketPaymentService.mock.instances[0]
+  const mockMakePayment = mockTicketPaymentService.makePayment
+  expect(mockMakePayment.mock.calls[0][0]).toEqual(accountId)
+  expect(mockMakePayment.mock.calls[0][1]).toEqual(40)
+
+  const mockSeatReservationService = SeatReservationService.mock.instances[0]
+  const mockReserveSeat = mockSeatReservationService.reserveSeat
+  expect(mockReserveSeat.mock.calls[0][0]).toEqual(accountId)
+  expect(mockReserveSeat.mock.calls[0][1]).toEqual(3)
+})
+
+/*
+  tests of invalid purchases
+*/
+
 test("try to purchase 21 adult tickets (max is 20 tickets total)", () => {
 
   const accountId = 1
@@ -122,26 +149,6 @@ test("try to purchase a child ticket without an adult ticket", () => {
   const ticketService = new TicketService()
   
   expect( () => { ticketService.purchaseTickets(accountId, purchaseRequest) } ).toThrow()
-})
-
-test("purchase 2 child tickets and 1 adult ticket", () => { // I assume this is okay, wan't totally clear but makes sense
-
-  const accountId = 1
-  const purchaseRequest1 = new TicketTypeRequest("ADULT", 1)
-  const purchaseRequest2 = new TicketTypeRequest("CHILD", 2)
-
-  const ticketService = new TicketService()
-  ticketService.purchaseTickets(accountId, purchaseRequest1, purchaseRequest2)
-  
-  const mockTicketPaymentService = TicketPaymentService.mock.instances[0]
-  const mockMakePayment = mockTicketPaymentService.makePayment
-  expect(mockMakePayment.mock.calls[0][0]).toEqual(accountId)
-  expect(mockMakePayment.mock.calls[0][1]).toEqual(40)
-
-  const mockSeatReservationService = SeatReservationService.mock.instances[0]
-  const mockReserveSeat = mockSeatReservationService.reserveSeat
-  expect(mockReserveSeat.mock.calls[0][0]).toEqual(accountId)
-  expect(mockReserveSeat.mock.calls[0][1]).toEqual(3)
 })
 
 test("try to purchase an infant ticket without an adult ticket", () => {
